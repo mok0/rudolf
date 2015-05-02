@@ -89,7 +89,7 @@ def xterm_from_rgb_string(rgb_text):
         raise ValueError(rgb_text)
     if len(bytes) < 3:
         raise ValueError(rgb_text)
-    rgb = map(ord, bytes)
+    rgb = list(map(ord, bytes))
     return xterm_from_rgb(rgb)
 
 
@@ -98,9 +98,9 @@ def cube_vals(n):
     assert n >= CUBE_START and n < GRAY_START
     val = n - CUBE_START
     c = val % CUBE_SIZE
-    val = val / CUBE_SIZE
+    val = val // CUBE_SIZE
     b = val % CUBE_SIZE
-    a = val / CUBE_SIZE
+    a = val // CUBE_SIZE
     return a, b, c
 
 
@@ -120,7 +120,7 @@ RGB_FROM_XTERM_COLOR = [
 
 
 def xterm_from_rgb(rgb):
-    smallest_distance = sys.maxint
+    smallest_distance = sys.maxsize
     for index in range(0, TABLE_END - TABLE_START):
         rc = RGB_FROM_XTERM_COLOR[index]
         dist = ((rc[0] - rgb[0]) ** 2 +
@@ -502,7 +502,7 @@ Got:
             write(self.colorize("failure", "FAILED"))
             write(" (")
             any = False
-            for label, count in summary.items():
+            for label, count in list(summary.items()):
                 if not count:
                     continue
                 if any:
@@ -556,7 +556,7 @@ Got:
             self.print_doctest_failure(formatted_traceback)
         else:
             self.print_colorized_traceback(formatted_traceback)
-            print >>self._stream
+            print(file=self._stream)
 
     def print_doctest_failure(self, formatted_failure):
         """Report a doctest failure.
@@ -579,8 +579,8 @@ Got:
                 break
             exc_lines.append(line)
         self.print_colorized_traceback("\n".join(exc_lines))
-        print >>self._stream
-        print >>self._stream, self.separator2
+        print(file=self._stream)
+        print(self.separator2, file=self._stream)
         exc_lines = []
 
         for line in lines:
@@ -600,17 +600,17 @@ Got:
                         self.color('testname'), test,
                         self.color('normal'), '\n'])
                 else:
-                    print >>self._stream, line
+                    print(line, file=self._stream)
             elif line.startswith('    '):
                 if colorize_diff and len(line) > 4:
                     color = self.diff_color.get(line[4],
                                                 color_of_indented_text)
-                    print >>self._stream, self.colorize(color, line)
+                    print(self.colorize(color, line), file=self._stream)
                 elif colorize_exception:
                     exc_lines.append(line[4:])
                 else:
-                    print >>self._stream, self.colorize(color_of_indented_text,
-                                                        line)
+                    print(self.colorize(color_of_indented_text,
+                                                        line), file=self._stream)
             else:
                 colorize_diff = False
                 if colorize_exception:
@@ -642,8 +642,8 @@ Got:
                     colorize_diff = True
                 else:
                     color_of_indented_text = 'normal'
-                print >>self._stream, line
-        print >>self._stream
+                print(line, file=self._stream)
+        print(file=self._stream)
 
     def print_colorized_traceback(self, formatted_traceback, indent_level=0):
         """Report a test failure.
@@ -678,19 +678,19 @@ Got:
                     self._stream.write(indentation)
                     self._stream.writelines(tb_lines)
                 else:
-                    print >>self._stream, indentation + line
+                    print(indentation + line, file=self._stream)
             elif line.startswith("    "):
-                print >>self._stream, self.colorize("failed-example",
-                                                    indentation + line)
+                print(self.colorize("failed-example",
+                                                    indentation + line), file=self._stream)
             elif line.startswith("Traceback (most recent call last)"):
-                print >>self._stream, indentation + line
+                print(indentation + line, file=self._stream)
             else:
-                print >>self._stream, self.colorize("exception",
-                                                    indentation + line)
+                print(self.colorize("exception",
+                                                    indentation + line), file=self._stream)
 
     def stop_test(self, test):
         if self._verbose > 1:
-            print >>self._stream
+            print(file=self._stream)
         self._stream.flush()
 
     def stop_tests(self):
@@ -729,7 +729,7 @@ class ColorOutputPlugin(nose.plugins.Plugin):
                            "exception": "red",
                            "skip": "yellow"}
     default_colorscheme = dict((name, parse_color(color)) for name, color in
-                               default_colorscheme.iteritems())
+                               default_colorscheme.items())
 
     score = 50  # Lower than default plugin level, since the output we're
                 # printing is replacing non-plugin core nose output, which
@@ -784,7 +784,7 @@ class ColorOutputPlugin(nose.plugins.Plugin):
         cs = dict(self.default_colorscheme)
         try:
             user_colorscheme = parse_colorscheme(options.colors)
-        except ValueError, exc:
+        except ValueError as exc:
             filenames = list(conf.files)
             if options.files:
                 filenames.extend(options.files)
@@ -858,7 +858,7 @@ class ColorOutputPlugin(nose.plugins.Plugin):
         # If the exception is a registered class, the error will be added to
         # the list for that class, not errors.
         formatted_err = self._formatter.format_traceback(err)
-        for cls, (storage, label, isfail) in self._result.errorClasses.items():
+        for cls, (storage, label, isfail) in list(self._result.errorClasses.items()):
             if issubclass(err[0], cls):
                 storage.append((test, formatted_err, err[0]))
                 self._formatter.test_error(test, err, label)
@@ -885,7 +885,7 @@ class ColorOutputPlugin(nose.plugins.Plugin):
             self._stream.writeln()
         self._formatter.print_error_list("ERROR", self._result.__errors)
         self._formatter.print_error_list("FAIL", self._result.__failures)
-        for cls in self._result.errorClasses.keys():
+        for cls in list(self._result.errorClasses.keys()):
             storage, label, isfail = self._result.errorClasses[cls]
             self._formatter.print_error_list(label, storage)
 
@@ -894,8 +894,8 @@ class ColorOutputPlugin(nose.plugins.Plugin):
         summary = nose.util.odict()
         if not success:
             summary["failures"], summary["errors"] = \
-                map(len, [self._result.__failures, self._result.__errors])
-            for cls in self._result.errorClasses.keys():
+                list(map(len, [self._result.__failures, self._result.__errors]))
+            for cls in list(self._result.errorClasses.keys()):
                 storage, label, isfail = self._result.errorClasses[cls]
                 if not isfail:
                     continue
@@ -916,7 +916,7 @@ class ColorOutputPlugin(nose.plugins.Plugin):
         return ''.join(traceback.format_exception(exctype, value, tb))
 
     def _is_relevant_tb_level(self, tb):
-        return tb.tb_frame.f_globals.has_key('__unittest')
+        return '__unittest' in tb.tb_frame.f_globals
 
     def _count_relevant_tb_levels(self, tb):
         length = 0
